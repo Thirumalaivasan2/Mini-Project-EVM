@@ -5,8 +5,11 @@ i2c = I2C(0, scl=Pin(22), sda=Pin(21))
 lcd = I2cLcd(i2c, 0x27, 16, 2)
 t, e = Pin(5, Pin.OUT), Pin(18, Pin.IN)
 while 1:
-    t.off(); time.sleep_us(2)
-    t.on(); time.sleep_us(10); t.off()
+    t.off(); 
+    time.sleep_us(2)
+    t.on(); 
+    time.sleep_us(10); 
+    t.off()
     d = time_pulse_us(e, 1, 30000)
     d = (d*0.0343/2) if d>0 else 0
     lcd.clear()
@@ -26,6 +29,7 @@ class LcdApi:
     def putstr(self, s):
         for i in s:
             self.hal_write_data(ord(i))
+
 import time
 from lcd_api import LcdApi
 class I2cLcd(LcdApi):
