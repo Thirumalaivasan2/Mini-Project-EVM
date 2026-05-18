@@ -1,0 +1,46 @@
+from machine import Pin, I2C, time_pulse_us
+from i2c_lcd import I2cLcd
+import time
+i2c = I2C(0, scl=Pin(22), sda=Pin(21))
+lcd = I2cLcd(i2c, 0x27, 16, 2)
+t, e = Pin(5, Pin.OUT), Pin(18, Pin.IN)
+while 1:
+    t.off(); time.sleep_us(2)
+    t.on(); time.sleep_us(10); t.off()
+    d = time_pulse_us(e, 1, 30000)
+    d = (d*0.0343/2) if d>0 else 0
+    lcd.clear()
+    lcd.putstr("Distance:")
+    lcd.move_to(0,1)
+    lcd.putstr(str(round(d,1))+"cm")
+    print("Distance:", d)
+    time.sleep(1)
+
+class LcdApi:
+    def __init__(self, c, r):
+        self.c, self.r = c, r
+    def clear(self):
+        self.hal_write_command(1)
+    def move_to(self, x, y):
+        self.hal_write_command(0x80 + x + 0x40*y)
+    def putstr(self, s):
+        for i in s:
+            self.hal_write_data(ord(i))
+import time
+from lcd_api import LcdApi
+class I2cLcd(LcdApi):
+    def __init__(self, i2c, addr, c, r):
+        self.i2c, self.addr = i2c, addr
+        super().__init__(c, r)
+        for i in (0x33,0x32,0x28,0x0C,0x06,0x01):
+            self.cmd(i)
+    def cmd(self, d):
+        self.send(d & 0xF0); self.send((d<<4)&0xF0)
+    def data(self, d):
+        self.send((d & 0xF0)|1); self.send(((d<<4)&0xF0)|1)
+    def send(self, d):
+        self.i2c.writeto(self.addr, bytes([d|8]))
+        self.i2c.writeto(self.addr, bytes([d|0xC]))
+        self.i2c.writeto(self.addr, bytes([d|8]))
+    hal_write_command = cmd
+    hal_write_data = data
